@@ -1,0 +1,57 @@
+@import '../styles.scss';
+
+* {
+    display: block;
+}
+#outer-container {
+    @include flexbox();
+    @include justify-content(center);
+    width: 100%;
+    .inner-container {
+        position: relative;
+        max-width: 1340px;
+        width: 100%;
+
+        .header {
+            position: relative;
+            width: 100%;
+
+            h1 {
+                @include font-size(60px);
+                position: relative;
+                z-index: 2;
+                width: auto;
+                font-family: 'Open Sans Condensed', sans-serif;
+                @include align-self(flex-start);
+                color: #f85558;
+                padding-left: 40px;
+                text-shadow: -3px 2px 5px rgba(0, 0, 0, 0.8);
+                border-top: 1px solid #fff;
+                border-bottom: 1px solid #fff;
+            }
+            img.logo-img {
+                position: absolute;
+                z-index: -1;
+                left: 0;
+                height: 50px;
+                top: 15px;
+            }
+            .header-right {
+                position: absolute;
+                right: 0;
+                top: 25px;
+                p {
+                    color: #fff;
+                    margin: 0;
+                    img {
+                        height: 30px;
+                        display: inline-block;
+                        vertical-align: middle;
+                        filter: invert(1);
+                        margin-right: 5px;
+                    }
+                }
+            }
+        }
+    }
+}

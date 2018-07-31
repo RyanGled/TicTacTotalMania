@@ -1,0 +1,15 @@
+<div id="outer-container">
+    <div class="inner-container">
+        <div class="header">
+            <img src="../assets/coin-eth.gif" class="logo-img" />
+            <h1>EthToss</h1>
+            <div class="header-right">
+                <p matTooltip="Ethereum Wallet Balance">
+                    <img class="eth-balance" src="../assets/ether.svg" />
+                    {{ ethBalance }}
+                </p>
+            </div>
+        </div>
+        <button (click)="Flip()">FLIP</button>
+    </div>
+</div>

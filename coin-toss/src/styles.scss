@@ -1,0 +1,360 @@
+
+//Angular Material 'Theme'
+@import 'assets/indigo-pink';
+
+html, body {
+    height: 100%;
+    width: 100%;
+    font-family: 'Open Sans Condensed', sans-serif;
+}
+body {
+    // background: #3f4c6b; /* Old browsers */
+    // background: -moz-linear-gradient(top, #3f4c6b 0%, #606c88 100%); /* FF3.6-15 */
+    // background: -webkit-linear-gradient(top, #3f4c6b 0%,#606c88 100%); /* Chrome10-25,Safari5.1-6 */
+    // background: linear-gradient(to bottom, #3f4c6b 0%,#606c88 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#3f4c6b', endColorstr='#606c88',GradientType=0 ); /* IE6-9 */
+    background-repeat: no-repeat;
+    background: #222;
+}
+
+/** Mixins **/
+/** layout mixins **/
+@mixin bp-large {
+    //>=Desktop
+    @media only screen and (max-width: 1440px) {
+        @content;
+    }
+}
+
+@mixin bp-medium {
+    //(<Phone, >Tablet, <Desktop)
+    @media only screen and (max-width: 1000px) {
+        @content;
+    }
+}
+
+@mixin bp-medium-small {
+    //(<Phone, >Tablet, <Desktop)
+    @media only screen and (max-width: 800px) {
+        @content;
+    }
+}
+
+@mixin bp-small {
+    //(<=Phone, <Tablet, <Desktop)
+    @media only screen and (max-width: 550px) {
+        @content;
+    }
+}
+/** layout mixins **/
+
+@function calculateRem($size) {
+    $remSize: $size / 16px;
+    @return $remSize * 1rem;
+}
+
+@mixin font-size($size) {
+    font-size: $size;
+    font-size: calculateRem($size);
+    // line-height: ($size * 1.5);
+}
+
+@mixin transition($args...) {
+    -webkit-transition: $args;
+    -moz-transition: $args;
+    -ms-transition: $args;
+    -o-transition: $args;
+    transition: $args;
+}
+
+@mixin opacity($opacity) {
+    opacity: $opacity;
+    $opacity-ie: $opacity * 100;
+    filter: alpha(opacity=$opacity-ie); //IE8
+}
+
+@mixin disabled() {
+    @include opacity(0.25);
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+@mixin text-selectable() {
+	-webkit-touch-callout: all;
+	-webkit-user-select: all;
+	-khtml-user-select: all;
+	-moz-user-select: all;
+	-ms-user-select: all;
+	user-select: all;
+}
+
+@mixin truncate($width: 100%) {
+    width: $width;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+} 
+// --------------------------------------------------
+// Flexbox SASS mixins
+// The spec: http://www.w3.org/TR/css3-flexbox
+// --------------------------------------------------
+
+// Flexbox display
+@mixin flexbox() {
+    display: -webkit-box;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    display: flex;
+}
+  
+// The 'flex' shorthand
+// - applies to: flex items
+// <positive-number>, initial, auto, or none
+@mixin flex($values) {
+    -webkit-box-flex: $values;
+        -moz-box-flex: $values;
+        -webkit-flex: $values;
+            -ms-flex: $values;
+                flex: $values;
+}
+
+// Flex Flow Direction
+// - applies to: flex containers
+// row | row-reverse | column | column-reverse
+@mixin flex-direction($direction) {
+    -webkit-flex-direction: $direction;
+        -moz-flex-direction: $direction;
+        -ms-flex-direction: $direction;
+            flex-direction: $direction;
+}
+
+// Flex Line Wrapping
+// - applies to: flex containers
+// nowrap | wrap | wrap-reverse
+@mixin flex-wrap($wrap) {
+    -webkit-flex-wrap: $wrap;
+        -moz-flex-wrap: $wrap;
+        -ms-flex-wrap: $wrap;
+            flex-wrap: $wrap;
+}
+
+// Flex Direction and Wrap
+// - applies to: flex containers
+// <flex-direction> || <flex-wrap>
+@mixin flex-flow($flow) {
+    -webkit-flex-flow: $flow;
+        -moz-flex-flow: $flow;
+        -ms-flex-flow: $flow;
+            flex-flow: $flow;
+}
+
+// Display Order
+// - applies to: flex items
+// <integer>
+@mixin order($val) {
+    -webkit-box-ordinal-group: $val;  
+        -moz-box-ordinal-group: $val;     
+                -ms-flex-order: $val;     
+                -webkit-order: $val;  
+                    order: $val;
+}
+
+// Flex grow factor
+// - applies to: flex items
+// <number>
+@mixin flex-grow($grow) {
+    -webkit-flex-grow: $grow;
+        -moz-flex-grow: $grow;
+        -ms-flex-grow: $grow;
+            flex-grow: $grow;
+}
+
+// Flex shrink
+// - applies to: flex item shrink factor
+// <number> 
+@mixin flex-shrink($shrink) {
+    -webkit-flex-shrink: $shrink;
+        -moz-flex-shrink: $shrink;
+        -ms-flex-shrink: $shrink;
+            flex-shrink: $shrink;
+}
+
+// Flex basis
+// - the initial main size of the flex item
+// - applies to: flex itemsnitial main size of the flex item
+// <width> 
+@mixin flex-basis($width) {
+    -webkit-flex-basis: $width;
+        -moz-flex-basis: $width;
+        -ms-flex-basis: $width;
+            flex-basis: $width;
+}
+
+// Axis Alignment
+// - applies to: flex containers
+// flex-start | flex-end | center | space-between | space-around 
+@mixin justify-content($justify) {
+    -webkit-justify-content: $justify;
+        -moz-justify-content: $justify;
+        -ms-justify-content: $justify;
+            justify-content: $justify;
+                -ms-flex-pack: $justify;
+}
+
+// Packing Flex Lines
+// - applies to: multi-line flex containers
+// flex-start | flex-end | center | space-between | space-around | stretch 
+@mixin align-content($align) {
+    -webkit-align-content: $align;
+        -moz-align-content: $align;
+        -ms-align-content: $align;
+            align-content: $align;
+}
+
+// Cross-axis Alignment
+// - applies to: flex containers
+// flex-start | flex-end | center | baseline | stretch 
+@mixin align-items($align) {
+    -webkit-align-items: $align;
+        -moz-align-items: $align;
+        -ms-align-items: $align;
+            align-items: $align;
+}
+  
+// Cross-axis Alignment
+// - applies to: flex items
+// auto | flex-start | flex-end | center | baseline | stretch 
+@mixin align-self($align) {
+    -webkit-align-self: $align;
+        -moz-align-self: $align;
+        -ms-align-self: $align;
+            align-self: $align;
+}
+
+@mixin transp-btn($border-width, $color) {
+    border: 1px solid rgba($color, .25);
+    color: $color;
+    background-color: transparent;
+
+    &:hover {
+        @include transition(0.2s ease-in-out);
+        border: 1px solid rgba($color, 1);
+        color: $color;
+    }
+}
+
+/** Keyframes & Animations **/
+@mixin animation($animate...) {
+    $max: length($animate);
+    $animations: '';
+
+    @for $i from 1 through $max {
+        $animations: #{$animations + nth($animate, $i)};
+
+        @if $i < $max {
+            $animations: #{$animations + ", "};
+        }
+    }
+    -webkit-animation: $animations;
+    -moz-animation:    $animations;
+    -o-animation:      $animations;
+    animation:         $animations;
+}
+
+@mixin keyframes($animationName) {
+    @-webkit-keyframes #{$animationName} {
+        @content;
+    }
+    @-moz-keyframes #{$animationName} {
+        @content;
+    }
+    @-o-keyframes #{$animationName} {
+        @content;
+    }
+    @keyframes #{$animationName} {
+        @content;
+    }
+}
+
+
+@mixin pulse {
+    @include keyframes(pulse) {
+        to {
+            opacity: 0;
+            transform: scale(1);
+        }
+    }
+}
+@mixin fadein {
+    @include keyframes(fadein) {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+}
+@mixin fadeout {
+    @include keyframes(fadeout) {
+        from { opacity: 1; }
+        to   { opacity: 0; }
+    }
+}
+@mixin fadeInDown {
+    @include keyframes(fadeInDown) {
+        from {
+            opacity: 0;
+            transform: translate3d(0, -20%, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+}
+@mixin fadeInUp {
+    @include keyframes(fadeInUp) {
+        from {
+            opacity: 0;
+            transform: translate3d(0, 0, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 20%, 0);
+        }
+    }
+}
+@mixin spin($startDegree, $endDegree) {
+    @include keyframes(spin) {
+        from {
+            transform: rotate($startDegree);
+        }
+        to {
+            transform: rotate($endDegree);
+        }
+    }
+}
+@mixin move($up, $down, $rotateLeft, $rotateRight) {
+    @include keyframes(move) {
+        0%, 100% {
+            top: $up;
+            transform: rotate($rotateLeft);
+        }
+        50% {
+            top: $down;
+            transform: rotate($rotateRight);
+        }
+    }
+}
+@mixin moveLeftRight($left, $right) {
+    @include keyframes(moveLeftRight) {
+        0%, 100% {
+            right: $left;
+        }
+        50% {
+            right: $right;
+        }
+    }
+}
+/** Keyframes & Animations **/
+/** Mixins **/
+html, body { height: 100%; }
+body { margin: 0; font-family: 'Roboto', sans-serif; }
