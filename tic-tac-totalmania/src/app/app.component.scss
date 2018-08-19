@@ -7,6 +7,7 @@
   @include flexbox();
   @include justify-content(center);
   width: 100%;
+
   .inner-container {
     position: relative;
     max-width: 1340px;
@@ -41,6 +42,8 @@
         position: absolute;
         right: 0;
         top: 25px;
+        z-index: 10;
+        text-align: right;
         p {
           color: $text-color;
           margin: 0;
@@ -123,5 +126,29 @@
         }
       }
     }
+  }
+}
+  
+.progress-spinner-outer-cont {
+  position: fixed;
+  height: 100vh;
+  width: 100vw;
+  z-index: 100;
+  background-color: rgba(0,0,0,0.5);
+  .progress-spinner-cont {
+    position: fixed;
+    z-index: 100;
+    left: calc(50% - 125px);
+    top: calc(50% - 125px);
+  }
+  h1 {
+    color: #fff;
+  }
+  a {
+    text-align: center;
+    color: $prim-color;
+    font-size: 20px;
+    text-decoration: none;
+    font-weight: bold;
   }
 }

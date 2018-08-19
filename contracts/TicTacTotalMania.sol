@@ -12,7 +12,7 @@ contract TicTacTotalMania {
     */
 
     //Initialise a minimum stake
-    uint256 public stake = 0.1 ether;
+    uint256 public stake = 0.01 ether;
     mapping (address => uint) public pendingWithdrawals;
 
     uint8 public sizeOfBoard = 3;
@@ -42,8 +42,8 @@ contract TicTacTotalMania {
 
     event PlayerHasJoined(address player);
     event NextPlayersTurn(address player);
-    event Win(address winningPlayer);
     event Mutation(uint256 mutationType);
+    event Win(address winningPlayer);
     event Draw();
     event Payout(uint256 amountWithdrawn, address playerWithdrawn);
 

@@ -1,7 +1,9 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { MatTooltipModule, MatDialogModule, MatButtonModule, MatProgressSpinnerModule } from '@angular/material';
+import { MatTooltipModule, MatDialogModule, MatButtonModule, MatProgressSpinnerModule, 
+         MatFormFieldModule, MatInputModule } from '@angular/material';
 
 import { AppComponent } from './app.component';
 
@@ -18,11 +20,14 @@ import { JoinGameDialogComponent } from './dialogs/join-game.modal.component';
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
+    ReactiveFormsModule,
 
     MatTooltipModule,
     MatButtonModule,
     MatDialogModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatFormFieldModule,
+    MatInputModule
   ],
   providers: [],
   entryComponents: [

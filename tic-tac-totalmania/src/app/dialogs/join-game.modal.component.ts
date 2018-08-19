@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter } from '@angular/core';
 import { MatDialogRef } from '@angular/material';
+import { FormGroup, FormControl, Validators } from '@angular/forms';
 
 @Component({
     template: `
@@ -12,12 +13,20 @@ import { MatDialogRef } from '@angular/material';
             <p>
               Please enter an existing game contract address to join.
             </p>
+
+            <form [formGroup]="form" *ngIf="form">
+              <mat-form-field>
+                <input matInput
+                  placeholder="Contract Address"
+                  formControlName="contractAddress">
+              </mat-form-field>
+            </form>
         </mat-dialog-content>
 
         <mat-dialog-actions>                
             <div class="btn-container">
               <button mat-raised-button color="primary" class="btn btn-primary btn-large"
-                (click)="Close(true)">
+                (click)="CloseAndJoin()">
                 Join Game
               </button>
               <button mat-raised-button color="accent" class="btn btn-transp"
@@ -31,11 +40,24 @@ import { MatDialogRef } from '@angular/material';
     styles: []
 })
 export class JoinGameDialogComponent {
+    
+    form: FormGroup;
+    closeAndJoin = new EventEmitter();
 
-    constructor(private _dialogRef: MatDialogRef<JoinGameDialogComponent>) { }
+    constructor(private _dialogRef: MatDialogRef<JoinGameDialogComponent>) {
+      this.form = new FormGroup({
+        //Hexadecimal addreses only
+        contractAddress: new FormControl('', Validators.pattern('0[xX][0-9a-fA-F]+'))
+      });
+    }
 
-    public Close(address: string): void {
-        this._dialogRef.close(address);
+    public CloseAndJoin(): void {
+      this.closeAndJoin.emit(this.form.value);
+      this.Close();
+    }
+
+    public Close(): void {
+        this._dialogRef.close();
     }
 
 }

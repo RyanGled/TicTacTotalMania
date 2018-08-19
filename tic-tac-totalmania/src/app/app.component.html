@@ -1,3 +1,39 @@
+<!-- User Feedback -->
+<div class="progress-spinner-outer-cont"
+  *ngIf="isMining 
+    || ShowWaitingForTurnSpinner()
+    || ShowWaitingToJoinSpinner()">
+  <div class="progress-spinner-cont"
+    *ngIf="isMining">
+    <mat-progress-spinner
+      [color]="'primary'"
+      [mode]="'indeterminate'"
+      [diameter]="250">
+    </mat-progress-spinner>
+    <h1>Mining Transaction...</h1>
+    <a target="_blank" href="{{ txUrl }}" *ngIf="txUrl">View Transaction on EtherScan</a>
+  </div>
+  <div class="progress-spinner-cont"
+    *ngIf="ShowWaitingForTurnSpinner()">
+    <mat-progress-spinner
+      [color]="'primary'"
+      [mode]="'indeterminate'"
+      [diameter]="250">
+    </mat-progress-spinner>
+    <h1>Waiting For Your Turn...</h1>
+  </div>
+  <div class="progress-spinner-cont"
+    *ngIf="ShowWaitingToJoinSpinner()">
+    <mat-progress-spinner
+      [color]="'primary'"
+      [mode]="'indeterminate'"
+      [diameter]="250">
+    </mat-progress-spinner>
+    <h1>Waiting For An Opponent...</h1>
+  </div>
+</div>
+<!-- User Feedback -->
+
 <div id="outer-container">
     <div class="inner-container">
         <div class="header">
@@ -8,14 +44,13 @@
                     <img class="eth-balance" src="../assets/ether.svg" />
                     {{ ethBalance }}
                 </p>
+                <p matTooltip="Contract Address"
+                  *ngIf="contractAddress">
+                    Contract Address: 
+                    {{ contractAddress }}
+                </p>
             </div>
         </div>
-        
-        <mat-progress-spinner
-          [color]="'primary'"
-          [mode]="'indeterminate'"
-          *ngIf="isMining">
-        </mat-progress-spinner>
 
         <div id="game-container">
           <div id="game-container-overlay"

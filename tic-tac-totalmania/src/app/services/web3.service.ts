@@ -19,12 +19,17 @@ export class Web3Service {
     constructor() {
         this.Init();
     }
+    
+    public static DelayPromise(t: number) {
+        return new Promise((resolve) => {
+            setTimeout(resolve, t * 1000)
+        });
+    }
 
     private async Init() {
         new EventService();
         await this.CheckBrowserCompatibility();
         await this.SetWeb3();
-        this.RetrieveEthAccounts();
     }
     
     private CheckBrowserCompatibility(): Promise<any> {
@@ -38,7 +43,6 @@ export class Web3Service {
     }
     
     private SetWeb3(): Promise<any> {
-
         return new Promise(async (resolve, reject) => {
             if (typeof (<any>window).web3 !== 'undefined') {
                 //using metamask provider
@@ -61,18 +65,22 @@ export class Web3Service {
                     reject("No Web3 provider found.");
                 }
             }
-            this.web3Ready = true;
         });
     };
 
-    private RetrieveEthAccounts(): void {        
-        (<any>window).web3.eth.getAccounts((err, accs) => {
+    public async RetrieveEthAccounts(): Promise<any> {
+        await (<any>window).web3.eth.getAccounts((err, accs) => {
             if (err != null || accs.length === 0) {
                 return;
             }
             this.accounts = accs;
             this.activeAccount = this.accounts[0];
         });
+        this.web3Ready = true;
+    }
+    
+    public async GetEthNetwork(): Promise<string> {
+        return await (<any>window).web3.eth.net.getNetworkType();
     }
 
     public GetAccounts(): string[] {
@@ -86,8 +94,10 @@ export class Web3Service {
     public GetEthBalance(): Promise<string> {
         return new Promise(async (resolve, reject) => {
 
-            this.GetBalance(this.activeAccount, "pending", async (error, result) => {
+            while (this.activeAccount === undefined)
+              await Web3Service.DelayPromise(1);
 
+            this.GetBalance(this.activeAccount, "pending", async (error, result) => {
                 if (!error) {
                     //store it as a BigNumber
                     this.ethBalance = this.FromWei(result, "ether");
@@ -114,40 +124,10 @@ export class Web3Service {
         return this.web3Ready;
     }
 
-    public async DeployContract(abi: any, constructorVal: number = 0): Promise<ContractDeploy> {
-        let contractReturn: ContractDeploy = {
-          txHash: null,
-          receipt: null,
-          confirmation: null
-        }
-
-        let contract = await new (<any>window).web3.eth.Contract(abi.abi)
-          .deploy({data: abi.bytecode})
-          .send({from: this.activeAccount, value: constructorVal},
-          (error, txHash) => {})
-            .on('error', (error) => { console.error('error', error); })
-            .on('transactionHash', (transactionHash) => { 
-              console.log('transactionHash', transactionHash);
-              contractReturn.txHash = transactionHash;
-            })
-            .on('receipt', function(receipt){
-              console.log('receipt', receipt.contractAddress);
-              contractReturn.receipt = receipt;
-            })
-            .on('confirmation', (confirmationNumber, receipt) => { 
-              console.log('confirmationNumber', confirmationNumber); 
-              contractReturn.confirmation = confirmationNumber;
-              console.log('receipt', receipt);
-              contractReturn.receipt = receipt;
-            });
-
-        return contractReturn;
+    public async GetContractInstance(abi: any, address: string): Promise<any> {
+      let contract = await new (<any>window).web3.eth.Contract(abi.abi, address);
+    
+      return contract;
     }
 
-}
-
-export interface ContractDeploy {
-  txHash: null,
-  receipt: null,
-  confirmation: null
 }
