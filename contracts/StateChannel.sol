@@ -1,161 +1,152 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
-import "./RandomNumber.sol";
+// import "./RandomNumber.sol";
+// import "./CoinToss.sol";
 
-contract StateChannel {
-    struct Game {
-        bytes32 combinedSeed;
-        address playersTurn;
-    }
-    Game public gameState;
-    
-    uint private constant ACTION_BET_HEAD_TAIL = 0;
+// contract StateChannel is CoinToss, RandomNumber {
+//     Game public CoinToss;
 
-    uint private constant ROUND_STATE_PREVIOUS_FLIP = 0;
-    uint private constant ROUND_STATE_STAKE = 2;
-    uint private constant ROUND_STATE_TOTAL_WINNINGS = 3;
+//     uint8 numOfPlays;
 
-    bytes32[9] outputSessionState;
-    bytes32[3] outputRoundState;
+//     bytes32[9] outputSessionState;
+//     bytes32[3] outputRoundState;
 
-    address public firstPlayer;
-    address public secondPlayer;
-    uint256 public amountStaked;
-    uint256 public firstPlayerBalance;
-    uint256 public secondPlayerBalance;
-    bool public isGameFinished;
+//     address public firstPlayer;
+//     address public secondPlayer;
+//     uint256 public amountStaked;
+//     uint256 public firstPlayerBalance;
+//     uint256 public secondPlayerBalance;
+//     bool public isGameFinished;
 
-    bytes32 currentSeed;
-    bytes32 nextSeed;
+//     bytes32 currentSeed;
+//     bytes32 nextSeed;
 
-    uint256 public timeoutInterval;
-    uint256 public timeout = 1**256 - 1;
+//     uint256 public timeout;
+//     uint256 public timeoutLeft= 2**256 - 1;
 
-    event StateChannelOpened();
-    event StartTimeout();
-    // event Play(address player, bytes32 combinedSeed, );
+//     event StateChannelOpened(address firstPlayer, address secondPlayer);
+//     event StartTimeout();
+//     event Play(uint8 numOfPlays, int winLoss);
 
-    constructor(uint256 _timeoutInterval) public payable {
-        firstPlayer = msg.sender;
-        firstPlayerBalance = msg.value;
-        timeoutInterval = _timeoutInterval;
-    }
+//     /**
+//     * Start a game with the 'house' (first player, who deploys the contract).
+//     * Specify a timeout 
+//     */
+//     constructor(uint256 _timeout) public payable {
+//         firstPlayer = msg.sender;
+//         firstPlayerBalance = msg.value;
+//         timeout = _timeout;
+//     }
 
-    function joinGame() public payable {
-        require(secondPlayer == 0, "Game has already started.");
-        require(msg.value == firstPlayerBalance, "Deposit amount too low.");
+//     function joinGame() public payable {
+//         require(msg.value == firstPlayerBalance, "Deposit amount too low.");
+//         require(secondPlayer == 0, "Game has already started.");
 
-        secondPlayer = msg.sender;
-        secondPlayerBalance = msg.value;
+//         secondPlayer = msg.sender;
+//         secondPlayerBalance = msg.value;
 
-        emit StateChannelOpened();
-    }
+//         emit StateChannelOpened(firstPlayer, secondPlayer);
+//     }
 
-    // RNG
-    function getCombinedSeed(bytes32 house, bytes32 player) pure internal returns (bytes32 combinedSeed) {
-        return keccak256(house, player);
-    }
+//     // RNG
+//     function getCombinedSeed(bytes32 _house, bytes32 _player) pure internal returns (bytes32 combinedSeed) {
+//         return keccak256(_house, _player);
+//     }
 
-    function validateRng(bytes32 currentSeed, bytes32 nextSeed) internal pure returns (bool) {
-        // only need to check that RNG is progressing and 
-        if (keccak256(nextSeed) != currentSeed) {
-            return false;
-        }
+//     function validateRng(bytes32 _currentSeed, bytes32 _nextSeed) internal pure returns (bool) {
+//         // only need to check that RNG is progressing and 
+//         if (keccak256(_nextSeed) != _currentSeed) {
+//             return false;
+//         }
 
-        return true;
-    }
+//         return true;
+//     }
 
-    function advanceState(bytes32 nextHouseSeed, bytes32 nextPlayerSeed, uint256 playerStake, bool action) internal view returns (bytes32[30] newState) {
+//     function advanceState(
+//         bytes32 nextHouseSeed, bytes32 nextPlayerSeed, uint256 playerStake, bool action, uint8 nonce) 
+//         internal view 
+//         returns (bytes32[30] newState)
+//     {
+//         //Prevent race conditions or cheating by matching the nonces with the current contract
+//         require(numOfPlays >= nonce, "Incorrect nonce, please try again");
 
-        bytes32 combinedSeed = getCombinedSeed(nextHouseSeed, nextPlayerSeed);
+//         bytes32 combinedSeed = getCombinedSeed(nextHouseSeed, nextPlayerSeed);
 
-        uint winloss;
+//         int winLoss;
 
-        (winloss, outputRoundState, outputSessionState) = startRound(
-            playerStake,
-            combinedSeed,
-            action
-        );
-    }
+//         (winLoss, outputRoundState, outputSessionState) = startRound(
+//             playerStake,
+//             combinedSeed,
+//             action
+//         );
 
-    function startRound(uint stake, bytes32 rngSeed, bool action) public pure returns (int winLoss, bytes32[3] outputRoundState, bytes32[9] outputSessionState) {
-        //Check for valid balance etc, here.
+//         bytes32 message = prefixed(keccak256(address(this), seq, num));
+//         require(recoverSigner(message, sig) == opponentOf(msg.sender));
 
-        bool betOnHeads = action;
-        bool isHeads = ((uint(rngSeed) & 1) == 1);
+//         numOfPlays += 1;
+//         timeoutLeft = 2**256 - 1;
+//         emit Play(numOfPlays, winLoss);
+//     }
 
-        winLoss = -int(stake);
-        if (betOnHeads == isHeads) {
-            outputRoundState[ROUND_STATE_TOTAL_WINNINGS] = bytes32(stake * 2);
-        }
+//     function startTimeout() public {
+//         require(!gameOver, "Game has ended.");
+//         require(state.whoseTurn == opponentOf(msg.sender),
+//             "Cannot start a timeout on yourself.");
 
-        outputRoundState[ROUND_STATE_STAKE] = bytes32(stake);
-        outputRoundState[ROUND_STATE_PREVIOUS_FLIP] = bytes32(isHeads ? 1 : 0);
+//         timeout = now + timeoutInterval;
+//         emit TimeoutStarted();
+//     }
 
-        return (winLoss, outputRoundState, outputSessionState);
-    }
+//     function claimTimeout() public {
+//         require(!gameOver, "Game has ended.");
+//         require(now >= timeout);
 
-    // // Timeout methods
-
-    // function startTimeout() public {
-    //     require(!gameOver, "Game has ended.");
-    //     require(state.whoseTurn == opponentOf(msg.sender),
-    //         "Cannot start a timeout on yourself.");
-
-    //     timeout = now + timeoutInterval;
-    //     emit TimeoutStarted();
-    // }
-
-    // function claimTimeout() public {
-    //     require(!gameOver, "Game has ended.");
-    //     require(now >= timeout);
-
-    //     gameOver = true;
-    //     opponentOf(state.whoseTurn).transfer(address(this).balance);
-    // }
+//         gameOver = true;
+//         opponentOf(state.whoseTurn).transfer(address(this).balance);
+//     }
 
 
-    // // Signature methods
+//     // Signature methods
 
-    // function splitSignature(bytes sig)
-    //     internal
-    //     pure
-    //     returns (uint8, bytes32, bytes32)
-    // {
-    //     require(sig.length == 65);
+//     function splitSignature(bytes sig)
+//     internal
+//     pure
+//     returns (uint8, bytes32, bytes32)
+//     {
+//         require(sig.length == 65);
 
-    //     bytes32 r;
-    //     bytes32 s;
-    //     uint8 v;
+//         bytes32 r;
+//         bytes32 s;
+//         uint8 v;
 
-    //     assembly {
-    //         // first 32 bytes, after the length prefix
-    //         r := mload(add(sig, 32))
-    //         // second 32 bytes
-    //         s := mload(add(sig, 64))
-    //         // final byte (first byte of the next 32 bytes)
-    //         v := byte(0, mload(add(sig, 96)))
-    //     }
+//         assembly {
+//             // first 32 bytes, after the length prefix
+//             r := mload(add(sig, 32))
+//             // second 32 bytes
+//             s := mload(add(sig, 64))
+//             // final byte (first byte of the next 32 bytes)
+//             v := byte(0, mload(add(sig, 96)))
+//         }
 
-    //     return (v, r, s);
-    // }
+//         return (v, r, s);
+//     }
 
-    // function recoverSigner(bytes32 message, bytes sig)
-    //     internal
-    //     pure
-    //     returns (address)
-    // {
-    //     uint8 v;
-    //     bytes32 r;
-    //     bytes32 s;
+//     function recoverSigner(bytes32 message, bytes sig)
+//     internal
+//     pure
+//     returns (address)
+//     {
+//         uint8 v;
+//         bytes32 r;
+//         bytes32 s;
 
-    //     (v, r, s) = splitSignature(sig);
+//         (v, r, s) = splitSignature(sig);
 
-    //     return ecrecover(message, v, r, s);
-    // }
+//         return ecrecover(message, v, r, s);
+//         }
 
-    // // Builds a prefixed hash to mimic the behavior of eth_sign.
-    // function prefixed(bytes32 hash) internal pure returns (bytes32) {
-    //     return keccak256("\x19Ethereum Signed Message:\n32", hash);
-    // }
-}
+//         // Builds a prefixed hash to mimic the behavior of eth_sign.
+//         function prefixed(bytes32 hash) internal pure returns (bytes32) {
+//         return keccak256("\x19Ethereum Signed Message:\n32", hash);
+//     }
+// }

@@ -1,0 +1,27 @@
+.mat-modal-cont {
+  h1 {
+      @include font-size(25px);
+      background-color: rgb(240, 240, 240);
+      padding: 20px 100px;
+      text-align: center;
+      color: #000;
+      border-bottom: 5px solid #dcdcdc;
+      background-color: transparent;
+  }
+
+  .btn-container {
+      margin: 0 auto;
+      margin-bottom: 10px;
+      button {
+          margin-top: 10px;
+      }
+  }
+}
+.mat-dialog-container {
+  background-repeat: no-repeat;
+  background-image: url('/assets/background.png');
+  background-size: cover;
+}
+mat-dialog-content {
+  text-align: center;
+}

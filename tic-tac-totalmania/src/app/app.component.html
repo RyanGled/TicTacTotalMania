@@ -1,0 +1,46 @@
+<div id="outer-container">
+    <div class="inner-container">
+        <div class="header">
+            <img src="../assets/coin-eth.gif" class="logo-img" />
+            <h1>TicTacTotalMania</h1>
+            <div class="header-right">
+                <p matTooltip="Ethereum Wallet Balance">
+                    <img class="eth-balance" src="../assets/ether.svg" />
+                    {{ ethBalance }}
+                </p>
+            </div>
+        </div>
+        
+        <mat-progress-spinner
+          [color]="'primary'"
+          [mode]="'indeterminate'"
+          *ngIf="isMining">
+        </mat-progress-spinner>
+
+        <div id="game-container">
+          <div id="game-container-overlay"
+            *ngIf="!gameInProgress">
+
+            <div class="button-cont">
+              <button mat-raised-button color="primary" class="btn btn-primary btn-large"
+                (click)="CreateGame()">
+                Start Game
+              </button>
+              <button mat-raised-button color="accent" class="btn btn-secondary btn-large"
+                (click)="JoinGame()">
+                Join Existing
+              </button>
+            </div>
+          </div>
+          <div class="tic-tac-row"
+            *ngFor="let row of boardSizeX">
+            <div class="tic-tac-col col-{{ boardSizeY.length+1 }}"
+              (mouseover)="ShowMarker($event)"
+              (mouseleave)="DestroyMarkers($event)"
+              *ngFor="let col of boardSizeY">
+              <p [style.color]="this.playerColor"></p>
+            </div>
+          </div>
+        </div>
+    </div>
+</div>
