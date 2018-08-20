@@ -113,8 +113,9 @@
           }
 
           p {
-            @include font-size(100px);
+            @include font-size(200px);
             margin: 0;
+            pointer-events: none;
 
             &.1 {
               color: rgb(51,153,254);
@@ -150,5 +151,10 @@
     font-size: 20px;
     text-decoration: none;
     font-weight: bold;
+  }
+  p {
+    width: 300px;
+    text-align: center;
+    color: #fff;
   }
 }

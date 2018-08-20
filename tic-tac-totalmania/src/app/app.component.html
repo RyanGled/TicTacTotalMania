@@ -1,8 +1,8 @@
 <!-- User Feedback -->
 <div class="progress-spinner-outer-cont"
-  *ngIf="isMining 
+  *ngIf="(isMining 
     || ShowWaitingForTurnSpinner()
-    || ShowWaitingToJoinSpinner()">
+    || ShowWaitingToJoinSpinner())">
   <div class="progress-spinner-cont"
     *ngIf="isMining">
     <mat-progress-spinner
@@ -12,9 +12,10 @@
     </mat-progress-spinner>
     <h1>Mining Transaction...</h1>
     <a target="_blank" href="{{ txUrl }}" *ngIf="txUrl">View Transaction on EtherScan</a>
+    <p *ngIf="!txUrl">Please remember to confirm your transaction with MetaMask</p>
   </div>
   <div class="progress-spinner-cont"
-    *ngIf="ShowWaitingForTurnSpinner()">
+    *ngIf="ShowWaitingForTurnSpinner() && !ShowWaitingToJoinSpinner()">
     <mat-progress-spinner
       [color]="'primary'"
       [mode]="'indeterminate'"
@@ -23,13 +24,17 @@
     <h1>Waiting For Your Turn...</h1>
   </div>
   <div class="progress-spinner-cont"
-    *ngIf="ShowWaitingToJoinSpinner()">
+    *ngIf="ShowWaitingToJoinSpinner() && !ShowWaitingForTurnSpinner()">
     <mat-progress-spinner
       [color]="'primary'"
       [mode]="'indeterminate'"
       [diameter]="250">
     </mat-progress-spinner>
     <h1>Waiting For An Opponent...</h1>
+    <p *ngIf="contractAddress">
+        Give this address to another player: 
+        {{ contractAddress }}
+    </p>
   </div>
 </div>
 <!-- User Feedback -->
@@ -70,10 +75,27 @@
           <div class="tic-tac-row"
             *ngFor="let row of boardSizeX">
             <div class="tic-tac-col col-{{ boardSizeY.length+1 }}"
-              (mouseover)="ShowMarker($event)"
-              (mouseleave)="DestroyMarkers($event)"
+              [attr.data-xpos]="col-1"
+              [attr.data-ypos]="row-1"
+              (mouseover)="ShowMarker($event, col-1, row-1)"
+              (mouseleave)="DestroyMarkers($event, col-1, row-1)"
+              (click)="PlacePiece($event)"
               *ngFor="let col of boardSizeY">
-              <p [style.color]="this.playerColor"></p>
+              <ng-container *ngIf="gameBoard !== null">
+                <p [style.color]="playerColor" class="empty-square"
+                  *ngIf="gameBoard[col-1][row-1] === '0x0000000000000000000000000000000000000000'">
+                </p>
+                <p [style.color]="playerOneColor" 
+                  *ngIf="gameBoard[col-1][row-1] === playerOne 
+                         && playerOne !== '0x0000000000000000000000000000000000000000'">
+                  {{ playerOneMarker }}
+                </p>
+                <p [style.color]="playerTwoColor"
+                  *ngIf="gameBoard[col-1][row-1] === playerTwo
+                         && playerTwo !== '0x0000000000000000000000000000000000000000'">
+                  {{ playerTwoMarker }}
+                </p>
+              </ng-container>
             </div>
           </div>
         </div>

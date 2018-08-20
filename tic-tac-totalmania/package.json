@@ -28,7 +28,7 @@
     "hammerjs": "^2.0.8",
     "rxjs": "^6.0.0",
     "truffle-contract": "^3.0.6",
-    "web3": "^1.0.0-beta.35",
+    "web3": "1.0.0-beta.33",
     "zone.js": "~0.8.26"
   },
   "devDependencies": {
