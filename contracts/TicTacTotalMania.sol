@@ -1,11 +1,11 @@
 pragma solidity ^0.4.24;
 
-// import "github.com/oraclize/ethereum-api/blob/master/oraclizeAPI_0.5.sol";
-// import "./oraclizeAPI_0.5.sol";
+import "../installed_contracts/zeppelin/contracts/math/SafeMath.sol";
 
-// contract TicTacTotalMania is usingOraclize {
+/** @title Tic Tac Total Mania */
 contract TicTacTotalMania {
 
+    using SafeMath for uint;
     bool public stoppedInEmergency = false;
     struct EmergencyVote {
         bool isInSupport;
@@ -17,11 +17,11 @@ contract TicTacTotalMania {
     uint256 public stake = 0.01 ether;
     mapping (address => uint) public pendingWithdrawals;
 
-    uint8 public sizeOfBoard = 3;
+    uint public sizeOfBoard = 3;
     address[3][3] public gameBoard;
     bool isGameActive;
 
-    uint8 numOfMoves;
+    uint numOfMoves;
     address public firstPlayer;
     address public secondPlayer;
     address public currActivePlayer;
@@ -46,7 +46,9 @@ contract TicTacTotalMania {
         }  
     }
 
-    // constructor(bool mutatorsOn) public payable {
+    
+    /** @dev Create an instance of the contract. NOTE: Minimum amount defined in stake var.
+      */
     constructor() public payable {
         //Check first player has sent at least an equal amount of Ether to start game.
         require(msg.value >= stake, "Initial value must be at least 0.01 Ether");
@@ -62,6 +64,8 @@ contract TicTacTotalMania {
         firstPlayer = msg.sender;
     }
 
+    /** @dev Allows a second player to join once contract is instantiated, as long as second player hasn't already joined.
+      */
     function join() public payable allowedUnlessEmergency {
         //Check that there isn't already a second player.
         assert(secondPlayer == address(0x0));
@@ -77,10 +81,17 @@ contract TicTacTotalMania {
         emit PlayerHasJoined(secondPlayer);
     }
     
+    /** @dev Returns existing Gameboard instance.
+      * @return existingGameBoard The existing gameboard, including already-claimed places by players.
+      */
     function returnBoard() public view returns(address[3][3] existingGameBoard) {
         return gameBoard;
     }
 
+    /** @dev Places a player's piece on the gameboard, as long as place is free.
+      * @param xPos Position as per X axis on board
+      * @param yPos Position as per y axis on board
+      */
     function placePiece(uint8 xPos, uint8 yPos) public allowedUnlessEmergency {
         //Ensure a piece isn't already on position.
         require(gameBoard[xPos][yPos] == address(0x0), "Game piece already exists on this square!");
@@ -94,17 +105,18 @@ contract TicTacTotalMania {
         assert(xPos < sizeOfBoard);
         assert(yPos < sizeOfBoard);
 
+        //Claim position for player
         gameBoard[xPos][yPos] = msg.sender;
-        numOfMoves++;
+        //SafeMath ++
+        numOfMoves = numOfMoves.add(1);
+        //Reset Timeout
         nextTimeoutPhase = (now + timeout);
 
         checkForWinner(xPos, yPos);
-
-        // if (playWithMutations) {
-        //     oraclize_query("WolframAlpha", "random number between 0 and 100");
-        // }
     }
 
+    /** @dev Finds the next player and updates state after a previous player's turn.
+      */
     function findNewActivePlayer() internal {
         //Ensure the address is one of our players!
         require((currActivePlayer == firstPlayer) || (currActivePlayer == secondPlayer), "Not a valid player");
@@ -118,6 +130,10 @@ contract TicTacTotalMania {
         emit NextPlayersTurn(currActivePlayer);
     }
 
+    /** @dev Checks for a winner on the gameboard; diagonally; x-axis; y-axis wins are all valid, as well as a draw.
+      * @param xPos Position as per X axis on board
+      * @param yPos Position as per y axis on board
+      */
     function checkForWinner(uint8 xPos, uint8 yPos) internal {
         //Check for y axis win
         for (uint8 i = 0; i < sizeOfBoard; i++) {
@@ -125,7 +141,7 @@ contract TicTacTotalMania {
                 break;
             }
 
-            if (i == sizeOfBoard - 1) {
+            if (i == sizeOfBoard.sub(1)) {
                 //Player has won
                 placeCrown(currActivePlayer);
                 return;
@@ -138,7 +154,7 @@ contract TicTacTotalMania {
                 break;
             }
 
-            if (i == sizeOfBoard - 1) {
+            if (i == sizeOfBoard.sub(1)) {
                 //Player has won
                 placeCrown(currActivePlayer);
                 return;
@@ -152,7 +168,7 @@ contract TicTacTotalMania {
                     break;
                 }
 
-                if (i == sizeOfBoard - 1) {
+                if (i == sizeOfBoard.sub(1)) {
                     //Player has won
                     placeCrown(currActivePlayer);
                     return;
@@ -168,7 +184,7 @@ contract TicTacTotalMania {
                 }
                 
 
-                if (i == sizeOfBoard - 1) {
+                if (i == sizeOfBoard.sub(1)) {
                     //Player has won
                     placeCrown(currActivePlayer);
                     return;
@@ -186,20 +202,29 @@ contract TicTacTotalMania {
         findNewActivePlayer();
     }
 
+    /** @dev Crowns a winner, and assigns the contract balance as winnings.
+      * @param winner Player winner
+      */
     function placeCrown(address winner) private {
         isGameActive = false;
+        //Assign winnings to winner
         pendingWithdrawals[winner] = address(this).balance;
         emit Win(winner);
     }
 
+    /** @dev Assigns game result as a draw, assigns balance as winnings equally between both players.
+      */
     function isDraw() private {
         isGameActive = false;
+        //Assign winnings divided equally
         uint balanceToShare = (address(this).balance / 2);
         pendingWithdrawals[firstPlayer] = balanceToShare;
         pendingWithdrawals[secondPlayer] = balanceToShare;
         emit Draw();
     }
 
+    /** @dev Pull payment functionality which transfers pre-approved amounts via placeCrown() or isDraw().
+      */
     function withdraw() public {
         require(pendingWithdrawals[msg.sender] != 0, "You have no Ether to withdraw");
         uint amountToWithdraw = pendingWithdrawals[msg.sender];
@@ -209,15 +234,17 @@ contract TicTacTotalMania {
         emit Payout(amountToWithdraw, msg.sender);
     }
 
-    /** 
-      Consideration and research needs to be undertaken on game theory & economic incentives here.
-      In theory the time on the block can be gamed, with the one constraint that miners have being that the timestamp
+    /*
+      Consideration and research needs to be undertaken on game theory & economic incentives during a timeout.
+      Theoretically the time on the block can be gamed, with the one constraint that miners have being that the timestamp
       cannot be ahead of the current time. In theory the long-term mean of the timestamps should be more accurate, 
       but one needs to consider the possibility of a malicious miner 'timing out' the game unfairly when it looks like
       they are losing. A win cannot be cheated but a loss could be avoided.
       
-      ** This is called manually by one of the players.
+      - This is called manually by one of the players.
     */
+    /** @dev Unlocks funds once the contract's timeout period has passed on any one player's turn.
+      */
     function unlockFundsAfterTimeout() public {
         //Game must be timed out & still active
         require(nextTimeoutPhase < now, "Game has not yet timed out");
@@ -230,6 +257,11 @@ contract TicTacTotalMania {
         }
     }
 
+    /** @dev DAO-like implementation which allows the first player (in the event of no second player) 
+    or both players to agree on an emergency stop, allowing withdrawal of funds.
+      * @param voteInFavour boolean as to whether the player is in favour of an emergency stop. 
+      * @param reason Reason given for voting, either in favour or not, of an emergency stop.
+      */
     function voteEmergencyStop(bool voteInFavour, string reason) public {
         Votes[msg.sender].isInSupport = voteInFavour;
         Votes[msg.sender].reasonGiven = reason;
@@ -245,6 +277,8 @@ contract TicTacTotalMania {
         }
     }
 
+    /** @dev Unlocks funds and divides equally ONLY once an Emergency Stop vote has passed successfully.
+      */
     function unlockFundsInEmergency() public onlyInEmergency {
         isDraw();
     }
