@@ -88,7 +88,7 @@ contract('TicTacTotalMania', (accounts) => {
   let newInstance;
   describe('Test draw result', () => {
     it("should award a draw.", async () => {
-      newInstance = await TicTacTotalMania.new({ from: accountOne, value: web3.toWei(0.1, "ether") });      
+      newInstance = await TicTacTotalMania.new({ from: accountOne, value: web3.toWei(0.1, "ether") });
       await newInstance.join({from: accountTwo, value: web3.toWei(0.1, "ether")});
       await newInstance.placePiece(0, 0, {from: accountTwo});
       await newInstance.placePiece(0, 1, {from: accountOne});
@@ -121,13 +121,57 @@ contract('TicTacTotalMania', (accounts) => {
     })
   });
 
+  let emergencyStopInstance;
+  describe('Test emergency stop voting functionality with a single player', () => {
+    it("should allow a single player to control the vote if a second player hasn't joined", async () => {
+      emergencyStopInstance = await TicTacTotalMania.new({ from: accountOne, value: web3.toWei(0.1, "ether") });
+      await emergencyStopInstance.voteEmergencyStop(true, "Didnt mean to start contract", {from: accountOne});
+      assert.equal(await emergencyStopInstance.stoppedInEmergency.call(), true);
+      const playerOneMayWithdraw = await emergencyStopInstance.pendingWithdrawals.call(accountOne);
+      assert.equal(playerOneMayWithdraw.toString(10), 100000000000000000);
+    });
+    it("should allow a withdrawal", async () => {
+      await emergencyStopInstance.withdraw({from: accountOne});
+      let payoutRes = await assertEvent(emergencyStopInstance, { event: "Payout" });
+      assert.equal(payoutRes[0].args.playerWithdrawn, accountOne);
+      assert.equal(payoutRes[0].args.amountWithdrawn.toString(10), 100000000000000000);
+    })
+  });
+
+  describe('Test emergency stop voting functionality with both players', () => {
+    it("should not allow a single player to control the vote", async () => {
+      emergencyStopInstance = await TicTacTotalMania.new({ from: accountOne, value: web3.toWei(0.1, "ether") });
+      emergencyStopInstance.join({from: accountTwo, value: web3.toWei(0.1, "ether")});
+      await emergencyStopInstance.voteEmergencyStop(true, "I dont like gambling", {from: accountOne});
+      assert.equal(await emergencyStopInstance.stoppedInEmergency.call(), false);
+      await emergencyStopInstance.voteEmergencyStop(true, "I dont like gambling too", {from: accountTwo});
+      assert.equal(await emergencyStopInstance.stoppedInEmergency.call(), true);
+    });
+    it("should allow a withdrawal from both users", async () => {
+      await emergencyStopInstance.unlockFundsInEmergency();
+
+      const playerOneMayWithdraw = await emergencyStopInstance.pendingWithdrawals.call(accountOne);
+      assert.equal(playerOneMayWithdraw.toString(10), 100000000000000000);
+      const playerTwoMayWithdraw = await emergencyStopInstance.pendingWithdrawals.call(accountTwo);
+      assert.equal(playerTwoMayWithdraw.toString(10), 100000000000000000);
+      
+      await emergencyStopInstance.withdraw({from: accountOne});
+      let payoutRes = await assertEvent(emergencyStopInstance, { event: "Payout" });
+      assert.equal(payoutRes[0].args.playerWithdrawn, accountOne);
+      assert.equal(payoutRes[0].args.amountWithdrawn.toString(10), 100000000000000000);
+
+      await emergencyStopInstance.withdraw({from: accountTwo});
+      let payoutResPlayerTwo = await assertEvent(emergencyStopInstance, { event: "Payout" });
+      assert.equal(payoutResPlayerTwo[0].args.playerWithdrawn, accountTwo);
+      assert.equal(payoutResPlayerTwo[0].args.amountWithdrawn.toString(10), 100000000000000000);
+    })
+  });
 });
 
 async function expectThrow (promise, message) {
   try {
     await promise;
   } catch (error) {
-    // Message is an optional parameter here
     if (message) {
       assert(
         error.message.search(message) >= 0,
@@ -135,13 +179,7 @@ async function expectThrow (promise, message) {
       );
       return;
     } else {
-      // TODO: Check jump destination to destinguish between a throw
-      //       and an actual invalid jump.
       const invalidOpcode = error.message.search('invalid opcode') >= 0;
-      // TODO: When we contract A calls contract B, and B throws, instead
-      //       of an 'invalid jump', we get an 'out of gas' error. How do
-      //       we distinguish this from an actual out of gas event? (The
-      //       ganache log actually show an 'invalid jump' event.)
       const outOfGas = error.message.search('out of gas') >= 0;
       const revert = error.message.search('revert') >= 0;
       assert(

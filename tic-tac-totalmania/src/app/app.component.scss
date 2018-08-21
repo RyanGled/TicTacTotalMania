@@ -41,7 +41,7 @@
     .header-right {
         position: absolute;
         right: 0;
-        top: 25px;
+        top: 10px;
         z-index: 10;
         text-align: right;
         p {
@@ -52,6 +52,9 @@
               display: inline-block;
               vertical-align: middle;
               margin-right: 5px;
+          }
+          img.player-icon {
+            height: 20px;
           }
         }
       }

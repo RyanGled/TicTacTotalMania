@@ -27,15 +27,15 @@ module.exports = {
   networks: {
     development: {
       host: "localhost",
-      port: 7545,
+      port: 8545,
       network_id: "*" // Match any network id
     },
-    rinkeby: {
-      host: "localhost",
-      from: "0x0085f8e72391Ce4BB5ce47541C846d059399fA6c",
-      port: 8545,
-      network_id: 4,
-      gas: 5000000
-    }
+    // rinkeby: {
+    //   host: "localhost",
+    //   from: "0x0085f8e72391Ce4BB5ce47541C846d059399fA6c",
+    //   port: 8545,
+    //   network_id: 4,
+    //   gas: 5000000
+    // }
   } 
 };

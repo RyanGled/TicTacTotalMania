@@ -6,10 +6,12 @@ pragma solidity ^0.4.24;
 // contract TicTacTotalMania is usingOraclize {
 contract TicTacTotalMania {
 
-    /**
-    * - what happens when Ether is sent to the contract beyond the initial stakes? Is it lost?
-      - check withdrawal pattern
-    */
+    bool public stoppedInEmergency = false;
+    struct EmergencyVote {
+        bool isInSupport;
+        string reasonGiven;
+    }
+    mapping (address => EmergencyVote) public Votes;
 
     //Initialise a minimum stake
     uint256 public stake = 0.01 ether;
@@ -24,33 +26,30 @@ contract TicTacTotalMania {
     address public secondPlayer;
     address public currActivePlayer;
 
-    /** 
-      Is there a DOS concern here? Could a player just DOS the contract until they are able to timeout/withdraw? 
-      Is it also possible miners can cheat the timestamp and force a timeout if it looked like they were losing?
-    */
     uint256 timeout = 30 minutes;
     uint256 nextTimeoutPhase;
 
-    bool playWithMutations;
-    string[3] MutationType = [
-        "BOARD_SIZE_INCREASE",
-        "BOARD_SIZE_DECREASE",
-        "GAME_PIECE_MUTINY"
-    ];
-
-    uint256 public randomNumber;
-
     event PlayerHasJoined(address player);
     event NextPlayersTurn(address player);
-    event Mutation(uint256 mutationType);
     event Win(address winningPlayer);
     event Draw();
     event Payout(uint256 amountWithdrawn, address playerWithdrawn);
 
+    modifier allowedUnlessEmergency { 
+        if (!stoppedInEmergency) {
+            _;
+        }
+    }
+    modifier onlyInEmergency { 
+        if (stoppedInEmergency) {
+            _;
+        }  
+    }
+
     // constructor(bool mutatorsOn) public payable {
     constructor() public payable {
         //Check first player has sent at least an equal amount of Ether to start game.
-        require(msg.value >= stake);
+        require(msg.value >= stake, "Initial value must be at least 0.01 Ether");
         
         //If initialised Ether value is HIGHER than minimum cost, the first player is setting a higher stake.
         //It is up to the second player whether they are happy to stake the same amount.
@@ -63,7 +62,7 @@ contract TicTacTotalMania {
         firstPlayer = msg.sender;
     }
 
-    function join() public payable {
+    function join() public payable allowedUnlessEmergency {
         //Check that there isn't already a second player.
         assert(secondPlayer == address(0x0));
         //Check that player one isn't trying to join their own game!
@@ -82,13 +81,13 @@ contract TicTacTotalMania {
         return gameBoard;
     }
 
-    function placePiece(uint8 xPos, uint8 yPos) public payable {
+    function placePiece(uint8 xPos, uint8 yPos) public allowedUnlessEmergency {
         //Ensure a piece isn't already on position.
-        require(gameBoard[xPos][yPos] == address(0x0));
+        require(gameBoard[xPos][yPos] == address(0x0), "Game piece already exists on this square!");
         //Ensure players aren't trying to play outside of their turn!
-        require(msg.sender == currActivePlayer);
+        require(msg.sender == currActivePlayer, "You may not place a piece outside of your turn");
         //Ensure game hasn't timed out
-        require(nextTimeoutPhase > now);
+        require(nextTimeoutPhase > now, "This game has timed out");
         //Ensure player isn't trying to play a completed game.
         assert(isGameActive == true);
         //Ensure pieces aren't placed out of scope of the board.
@@ -108,7 +107,7 @@ contract TicTacTotalMania {
 
     function findNewActivePlayer() internal {
         //Ensure the address is one of our players!
-        require((currActivePlayer == firstPlayer) || (currActivePlayer == secondPlayer));
+        require((currActivePlayer == firstPlayer) || (currActivePlayer == secondPlayer), "Not a valid player");
 
         if (currActivePlayer == firstPlayer) {
             currActivePlayer = secondPlayer;
@@ -204,17 +203,11 @@ contract TicTacTotalMania {
     function withdraw() public {
         require(pendingWithdrawals[msg.sender] != 0, "You have no Ether to withdraw");
         uint amountToWithdraw = pendingWithdrawals[msg.sender];
-        // require(amountToWithdraw > 0, "You have no Ether to withdraw");
         // Zero the transfer before sending amount to prevent re-entrancy attacks
         pendingWithdrawals[msg.sender] = 0;
         msg.sender.transfer(amountToWithdraw);
         emit Payout(amountToWithdraw, msg.sender);
     }
-    
-    // function __callback(bytes32 myid, uint256 result) public {
-    //     require(msg.sender == oraclize_cbAddress());
-    //     mutateBoard(result);
-    // }
 
     /** 
       Consideration and research needs to be undertaken on game theory & economic incentives here.
@@ -227,21 +220,33 @@ contract TicTacTotalMania {
     */
     function unlockFundsAfterTimeout() public {
         //Game must be timed out & still active
-        require(nextTimeoutPhase < now);
-        require(isGameActive == true);
+        require(nextTimeoutPhase < now, "Game has not yet timed out");
+        require(isGameActive == true, "Game has already been rendered inactive.");
 
+        if (currActivePlayer == firstPlayer) {
+            placeCrown(secondPlayer);
+        } else if (currActivePlayer == secondPlayer) {
+            placeCrown(firstPlayer);
+        }
+    }
+
+    function voteEmergencyStop(bool voteInFavour, string reason) public {
+        Votes[msg.sender].isInSupport = voteInFavour;
+        Votes[msg.sender].reasonGiven = reason;
+
+        if (Votes[firstPlayer].isInSupport && Votes[secondPlayer].isInSupport) {
+            //Both players have voted to stop the game.
+            stoppedInEmergency = true;
+        }
+        if (Votes[firstPlayer].isInSupport && secondPlayer == address(0x0)) {
+            //Only one player has joined so far, thus they hold all voting power.
+            stoppedInEmergency = true;
+            pendingWithdrawals[firstPlayer] = address(this).balance;
+        }
+    }
+
+    function unlockFundsInEmergency() public onlyInEmergency {
         isDraw();
     }
-
-    /** MUTATIONS */
-    function mutateBoard(uint256 randomNum) internal {
-        //Board must not mutate below 3x3 or game is unwinnable
-        //RNG determines type of mutation
-
-        emit Mutation(randomNum);
-
-        //Switch statement for type of mutation
-    }
-    /** MUTATIONS */
 
 }

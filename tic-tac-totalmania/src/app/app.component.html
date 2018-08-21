@@ -50,6 +50,11 @@
                     <img class="eth-balance" src="../assets/ether.svg" />
                     {{ ethBalance }}
                 </p>
+                <p matTooltip="Player Address"
+                  *ngIf="activeAccount">
+                    <img class="player-icon" src="../assets/player.svg" />
+                    {{ activeAccount }}
+                </p>
                 <p matTooltip="Contract Address"
                   *ngIf="contractAddress">
                     Contract Address: 
@@ -64,7 +69,7 @@
 
             <div class="button-cont">
               <button mat-raised-button color="primary" class="btn btn-primary btn-large"
-                (click)="CreateGame()">
+                (click)="InitContract()">
                 Start Game
               </button>
               <button mat-raised-button color="accent" class="btn btn-secondary btn-large"

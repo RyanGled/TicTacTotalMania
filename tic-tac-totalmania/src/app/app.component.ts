@@ -2,9 +2,7 @@ import { Component, ChangeDetectorRef } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '../../node_modules/@angular/material';
 
 import { Web3Service } from './services/web3.service';
-import { MersenneTwister } from '../../../core/mersenne-twister';
 
-import { MutationDialogComponent } from './dialogs/mutation.modal.component';
 import { JoinGameDialogComponent } from './dialogs/join-game.modal.component';
 import Web3 from '../../node_modules/web3';
 import { ResultDialogComponent } from './dialogs/result.modal.component';
@@ -83,7 +81,6 @@ export class AppComponent {
 
       const playerHasJoinedEvent = this.contractAbi.abi.filter(val => { return val.name == 'PlayerHasJoined'});
       const nextPlayersTurnEvent = this.contractAbi.abi.filter(val => { return val.name == 'NextPlayersTurn'});
-      const mutationEvent = this.contractAbi.abi.filter(val => { return val.name == 'Mutation'});
       const winEvent = this.contractAbi.abi.filter(val => { return val.name == 'Win'});
       const drawEvent = this.contractAbi.abi.filter(val => { return val.name == 'Draw'});
       const payoutEvent = this.contractAbi.abi.filter(val => { return val.name == 'Payout'});
@@ -267,17 +264,6 @@ export class AppComponent {
       this.GetCurrentPlayersTurn();
     }
     
-    public CreateGame(): void {
-      //Show dialog asking whether they would like to play with mutations
-      const dialogConfig = new MatDialogConfig();
-      dialogConfig.autoFocus = false;
-
-      const mutationDialog = this.dialog.open(MutationDialogComponent, dialogConfig);
-      mutationDialog.afterClosed().subscribe(mutations => {
-        this.InitContract(mutations);
-      })
-    }
-    
     public JoinGame(): void {
       const joinGameDialog = this.dialog.open(JoinGameDialogComponent);
       joinGameDialog.componentInstance.closeAndJoin.subscribe(address => {
@@ -285,7 +271,7 @@ export class AppComponent {
       })
     }
 
-    private async InitContract(mutationsActive: boolean = false) {
+    public async InitContract() {
       this.isMining = true;
       this.activeContract = await this.DeployContract(this.contractAbi, 10000000000000000);
       localStorage.setItem('gameInProg', JSON.stringify(this.activeContract));
