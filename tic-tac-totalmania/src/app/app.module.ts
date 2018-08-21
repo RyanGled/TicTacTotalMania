@@ -9,13 +9,15 @@ import { AppComponent } from './app.component';
 
 import { MutationDialogComponent } from './dialogs/mutation.modal.component';
 import { JoinGameDialogComponent } from './dialogs/join-game.modal.component';
+import { ResultDialogComponent } from './dialogs/result.modal.component';
 
 @NgModule({
   declarations: [
     AppComponent,
 
     MutationDialogComponent,
-    JoinGameDialogComponent
+    JoinGameDialogComponent,
+    ResultDialogComponent
   ],
   imports: [
     BrowserModule,
@@ -32,7 +34,8 @@ import { JoinGameDialogComponent } from './dialogs/join-game.modal.component';
   providers: [],
   entryComponents: [
     MutationDialogComponent,
-    JoinGameDialogComponent
+    JoinGameDialogComponent,
+    ResultDialogComponent
   ],
   bootstrap: [AppComponent]
 })

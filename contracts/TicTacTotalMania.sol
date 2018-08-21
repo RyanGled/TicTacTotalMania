@@ -28,7 +28,7 @@ contract TicTacTotalMania {
       Is there a DOS concern here? Could a player just DOS the contract until they are able to timeout/withdraw? 
       Is it also possible miners can cheat the timestamp and force a timeout if it looked like they were losing?
     */
-    uint256 timeout = 5 minutes;
+    uint256 timeout = 30 minutes;
     uint256 nextTimeoutPhase;
 
     bool playWithMutations;

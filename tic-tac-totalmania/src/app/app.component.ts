@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '../../node_modules/@angular/material';
 
 import { Web3Service } from './services/web3.service';
@@ -7,6 +7,7 @@ import { MersenneTwister } from '../../../core/mersenne-twister';
 import { MutationDialogComponent } from './dialogs/mutation.modal.component';
 import { JoinGameDialogComponent } from './dialogs/join-game.modal.component';
 import Web3 from '../../node_modules/web3';
+import { ResultDialogComponent } from './dialogs/result.modal.component';
 
 @Component({
   selector: 'app-root',
@@ -40,10 +41,12 @@ export class AppComponent {
     private currActivePlayer: string;
     private isMyTurn: boolean = false;
     private gameBoard: number[] = null;
+    private dialogExists: boolean = false;
 
     constructor(
       public dialog: MatDialog,
-      private _web3Service: Web3Service) {
+      private _web3Service: Web3Service,
+      private _changeDetectorRef: ChangeDetectorRef) {
         //Poll for web3 object ready
         const getWeb3Ready = setInterval(() => {            
             if (this._web3Service.GetIsWeb3Ready()) {
@@ -85,7 +88,7 @@ export class AppComponent {
       const drawEvent = this.contractAbi.abi.filter(val => { return val.name == 'Draw'});
       const payoutEvent = this.contractAbi.abi.filter(val => { return val.name == 'Payout'});
 
-      const subscription = await web3Inf.eth.subscribe('logs', 
+      const subscription = await (web3Inf.eth as any).subscribe('logs', 
         {
           address: this.contractAddress,
           fromBlock: 0
@@ -93,13 +96,10 @@ export class AppComponent {
         (error, result) => {
           if (error)
             console.log(error);
-
-            console.log('SetContractEventWatchers 1');
             
           console.log(result);
         })
         .on("data", (log) => {
-          console.log('SetContractEventWatchers 2');
           switch(log.topics[0]) {
             case playerHasJoinedEvent[0].signature:
               this.PlayerHasJoined(log);
@@ -107,10 +107,18 @@ export class AppComponent {
             case nextPlayersTurnEvent[0].signature:
               this.NextPlayerTurn(log);
               break;
+            case winEvent[0].signature:
+              this.PlayerHasWon(log);
+              break;
+            case drawEvent[0].signature:
+              this.ResultIsDraw(log);
+              break;
+            case payoutEvent[0].signature:
+              this.Payout(log);
+              break;
           }
         })
         .on("changed", (log) => {
-          console.log('SetContractEventWatchers 3');
           console.log('changed', log);
         });
     }
@@ -118,35 +126,115 @@ export class AppComponent {
     private PlayerHasJoined(log: any): void {
       this.playerTwo = log.data;
       this.gameInProgress = true;
+      this.GetPlayerDetails();
       this.GetCurrentPlayersTurn();
     }
   
     private NextPlayerTurn(log: any): void {
-      console.log('log.data', log.data);
-      
+      console.log('NextPlayerTurn');
       this.currActivePlayer = log.data;
-      this.GetCurrentPlayersTurn();
+      console.log('this.currActivePlayer', this.currActivePlayer);
+      this.GetCurrentPlayersTurn(this.currActivePlayer);
       this.CreateBoardSize();
     }
 
-    private async GetCurrentPlayersTurn() {
-      this.currActivePlayer = await this.activeContract.methods.currActivePlayer().call();     
+    private PlayerHasWon(log: any): void {
+      if (this.dialogExists)
+        return;
+
+      const dialogConfig = new MatDialogConfig();
+      dialogConfig.autoFocus = false;
+
+      dialogConfig.data = {
+        winningAddress: String(log.data).toUpperCase(),
+        currentPlayerAddress: this.returnPaddedAddress(this.activeAccount)
+      };
+
+      const resultDialog = this.dialog.open(ResultDialogComponent, dialogConfig);
+      this.dialogExists = true;
+      resultDialog.componentInstance.cashout.subscribe(() => {
+        this.RequestPayout();
+      });
+      resultDialog.afterClosed().subscribe(() => {
+        this.dialogExists = false;
+        this.GameOver();
+      })
+    }
+
+    private ResultIsDraw(log: any): void {
+      if (this.dialogExists)
+        return;
+        
+      const dialogConfig = new MatDialogConfig();
+      dialogConfig.autoFocus = false;
+
+      dialogConfig.data = {
+        winningAddress: null,
+        currentPlayerAddress: this.returnPaddedAddress(this.activeAccount)
+      };
+
+      const resultDialog = this.dialog.open(ResultDialogComponent, dialogConfig);
+      this.dialogExists = true;
+      resultDialog.afterClosed().subscribe(() => {
+        this.RequestPayout();
+        this.dialogExists = false;
+        this.GameOver();
+      })
+    }
+
+    private returnPaddedAddress(address: string): string {
+      return String((<any>window).web3.utils.padLeft(address, 64)).toUpperCase()
+    }
+
+    private async RequestPayout() {
+      this.isMining = true;
+      await this.activeContract.methods.withdraw().send({from: this.activeAccount},
+        (error, txHash) => {})
+        .on('error', (error) => { 
+          console.error('error', error);
+          // window.location.reload();
+        })
+        .on('transactionHash', (transactionHash) => { 
+          console.log('transactionHash', transactionHash);
+          this.txUrl = `https://${this.connectedNetwork}.etherscan.io/tx/${transactionHash}`;
+        })
+        .on('receipt', function(receipt) {
+          console.log('receipt', receipt.contractAddress);
+        })
+        .on('confirmation', (confirmationNumber, receipt) => { 
+          console.log('confirmationNumber', confirmationNumber);
+          console.log('receipt', receipt);
+        });
+      this.isMining = false;
+      this.ethBalance = await this._web3Service.GetEthBalance();
+    }
+
+    private Payout(log: any): void {
+      this.GameOver();
+    }
+
+    private async GetCurrentPlayersTurn(activePlayer?: string) {
+      if (!activePlayer) {
+        this.currActivePlayer = await this.activeContract.methods.currActivePlayer().call();
+      } else {
+        this.currActivePlayer = activePlayer
+      }
       console.log('this.currActivePlayer', this.currActivePlayer);
-      console.log('this.activeAccount', this.activeAccount);
-      
        
-      if (this.currActivePlayer === this.activeAccount) {
+      if (this.returnPaddedAddress(this.currActivePlayer) === this.returnPaddedAddress(this.activeAccount)) {
         this.isMyTurn = true;
       } else {
         this.isMyTurn = false;
       }
-      console.log('this.isMyTurn', this.isMyTurn);
+      console.log('this.isMyTurn',this.isMyTurn);
+      
     }
     
     private async CreateBoardSize() {
       let ySize,
           xSize;
-      this.gameBoard = await this.activeContract.methods.returnBoard().call();
+      if (this.activeContract)
+        this.gameBoard = await this.activeContract.methods.returnBoard().call();
       if (this.gameInProgress) {
         ySize = this.gameBoard.length,
         xSize = this.gameBoard.length;
@@ -184,16 +272,13 @@ export class AppComponent {
       const dialogConfig = new MatDialogConfig();
       dialogConfig.autoFocus = false;
 
-      const mutationDialog = this.dialog.open(MutationDialogComponent);
+      const mutationDialog = this.dialog.open(MutationDialogComponent, dialogConfig);
       mutationDialog.afterClosed().subscribe(mutations => {
         this.InitContract(mutations);
       })
     }
     
     public JoinGame(): void {
-      const dialogConfig = new MatDialogConfig();
-      dialogConfig.autoFocus = false;
-
       const joinGameDialog = this.dialog.open(JoinGameDialogComponent);
       joinGameDialog.componentInstance.closeAndJoin.subscribe(address => {
         this.Join(address);
@@ -203,10 +288,10 @@ export class AppComponent {
     private async InitContract(mutationsActive: boolean = false) {
       this.isMining = true;
       this.activeContract = await this.DeployContract(this.contractAbi, 10000000000000000);
+      localStorage.setItem('gameInProg', JSON.stringify(this.activeContract));
       this.InitOrRetrieveGame();
       this.isMining = false;
-      
-      localStorage.setItem('gameInProg', JSON.stringify(this.activeContract));
+      this.ethBalance = await this._web3Service.GetEthBalance();
     }
 
     private async DeployContract(abi: any, constructorVal: number = 0): Promise<ContractDeploy> {
@@ -273,10 +358,11 @@ export class AppComponent {
             console.log('receipt', receipt);
           });
 
+      localStorage.setItem('gameInProg', JSON.stringify(txRes));
       this.InitOrRetrieveGame();
+      this.ethBalance = await this._web3Service.GetEthBalance();
       this.gameInProgress = true;
       this.isMining = false;
-      localStorage.setItem('gameInProg', JSON.stringify(txRes));
     }
 
     private ShowMarker(event: MouseEvent, xPos: number, yPos: number): void {
@@ -323,12 +409,15 @@ export class AppComponent {
           console.log('receipt', receipt);
         });
       this.isMining = false;
-      this.CreateBoardSize();
+      this.InitOrRetrieveGame();
       this.GetCurrentPlayersTurn();
+      this.CreateBoardSize();
     }
 
     public GameOver(): void {
       this.gameInProgress = false;
+      this.gameBoard = null;
+      this.contractAddress = null;
       localStorage.clear();
     } 
 
